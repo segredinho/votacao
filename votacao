@@ -151,7 +151,49 @@ document.getElementById('card-flavio').style.flex = votesFlavio || 1;
 }
 
 // Conecta ao servidor local Node.js (que escuta o TikTok)
+// Conexão adaptativa via WebSocket
+function connectWS() {
+const wsProtocol = window.location.protocol === 'https:' ? 'ws:' : 'ws:';
 const ws = new WebSocket('ws://localhost:8080');
+
+ws.onopen = () => {
+const statusEl = document.getElementById('status');
+if (statusEl) {
+statusEl.innerText = '🟢 Conectado ao conector e escutando a Live!';
+statusEl.style.color = '#00ff66';
+}
+};
+
+ws.onclose = () => {
+const statusEl = document.getElementById('status');
+if (statusEl) {
+statusEl.innerText = '🔴 Servidor Offline (Inicie o Node.js)';
+statusEl.style.color = '#ff3333';
+}
+setTimeout(connectWS, 3000);
+};
+
+ws.onerror = (err) => {
+console.error('Erro na conexão WebSocket:', err);
+};
+
+ws.onmessage = (event) => {
+const data = JSON.parse(event.data);
+if (data.type === 'GIFT') {
+const giftName = data.giftName.toLowerCase();
+
+if (giftName.includes('rose') && !giftName.includes('white')) {
+votesLula += data.repeatCount;
+} else if (giftName.includes('white rose') || giftName.includes('branca')) {
+votesFlavio += data.repeatCount;
+}
+updateUI();
+}
+};
+}
+
+connectWS();
+
 
 ws.onopen = () => {
 document.getElementById('status').innerText = '🟢 Conectado à Live do TikTok';
